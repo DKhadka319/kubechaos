@@ -133,8 +133,10 @@ def fact(data, crit, tool):
 def ask(data):
     answers = {}
     print("\nKubeChaos Advisor - answer 6 quick questions (press Enter for the default)\n")
-    for q in data["questions"]:
-        print(q["text"])
+    total = len(data["questions"])
+    for qn, q in enumerate(data["questions"], 1):
+        pick = "pick one or more of the options" if q["type"] == "many" else "pick one of the options"
+        print(f"Q{qn}/{total}. {q['text'].replace(' Pick any.', '')}  ({pick})")
         for i, o in enumerate(q["options"], 1):
             print(f"  {i}. {o['label']}")
         d = data["defaults"][q["id"]]
