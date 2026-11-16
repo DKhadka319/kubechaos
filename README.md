@@ -28,12 +28,13 @@ cd kubechaos
 Or in a terminal (Python 3 only, no packages):
 
 ```
-python3 advisor.py
+py advisor.py           # Windows
+python3 advisor.py      # Mac or Linux
 python3 advisor.py --use edge --ram small --care memory,recovery
 python3 advisor.py --list        # all question and answer ids
 ```
 
-On Windows type `py` instead of `python3` (for example `py advisor.py`). If Windows says "Python was not found", install Python from https://www.python.org/downloads/ and tick "Add python.exe to PATH".
+On Windows always type `py` where this page says `python3`. If Windows says "Python was not found", install Python from https://www.python.org/downloads/ and tick "Add python.exe to PATH".
 
 ## Benchmark your own machine
 
