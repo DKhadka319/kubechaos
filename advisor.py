@@ -140,17 +140,22 @@ def ask(data):
         d = data["defaults"][q["id"]]
         dflt = ",".join(str(i) for i, o in enumerate(q["options"], 1)
                         if o["id"] in (d if isinstance(d, list) else [d]))
-        hint = "numbers, comma separated" if q["type"] == "many" else "number"
+        n = len(q["options"])
+        hint = f"1-{n}, you can pick more than one, like 1,3" if q["type"] == "many" else f"1-{n}"
         while True:
             raw = input(f"  Your choice ({hint}) [{dflt}]: ").strip() or dflt
             try:
                 idx = [int(x) for x in raw.replace(" ", "").split(",") if x]
-                ids = [q["options"][i - 1]["id"] for i in idx if 1 <= i <= len(q["options"])]
-                if ids and (q["type"] == "many" or len(ids) == 1):
+                ok = idx and all(1 <= i <= n for i in idx) and (q["type"] == "many" or len(idx) == 1)
+                ids = [q["options"][i - 1]["id"] for i in dict.fromkeys(idx)] if ok else []
+                if ids:
                     break
             except ValueError:
                 pass
-            print("  Please type a number from the list.")
+            if q["type"] == "many":
+                print(f"  Please select one or more of the given options: numbers from 1 to {n}, separated by commas (for example 1,3).")
+            else:
+                print(f"  Please select one of the given options: type one number from 1 to {n}.")
         answers[q["id"]] = ids if q["type"] == "many" else ids[0]
         print()
     return answers
