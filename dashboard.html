@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KubeChaos Live Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --quiet:#5b6475; --line:#e3e6eb; --accent:#2f6fde; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 24px; background:var(--card); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  h1 { margin:0; font-size:22px; } .sub { color:var(--quiet); font-size:13px; }
+  #status { font-weight:600; color:var(--accent); }
+  main { padding:16px 24px; display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card h2 { margin:0 0 8px; font-size:15px; }
+  .wide { grid-column:1/-1; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { padding:6px 8px; border-bottom:1px solid var(--line); text-align:right; }
+  th:first-child, td:first-child { text-align:left; }
+  #log { font-family:Consolas, monospace; font-size:12px; height:220px; overflow:auto; white-space:pre-wrap; background:#11151c; color:#d6e2ff; padding:10px; border-radius:8px; }
+  select { font-size:14px; padding:6px; }
+  #rec { font-size:15px; margin-top:10px; line-height:1.5; }
+  .best { font-weight:700; color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>KubeChaos Live Dashboard</h1>
+  <div class="sub">Kubernetes vs K3s vs MicroK8s vs Docker Swarm vs Nomad, same app, same tests. Updates every 2 seconds.</div></div>
+  <div>Status: <span id="status">waiting</span> <span class="sub" id="updated"></span></div>
+</header>
+<main>
+  <div class="card wide"><h2>Recommender: what do you need?</h2>
+    <select id="need">
+      <option value="edge">Small edge device (low memory and CPU)</option>
+      <option value="traffic">High traffic web app (speed and latency)</option>
+      <option value="reliability">Always-on service (Survival Score)</option>
+      <option value="setup">Beginner or quick setup</option>
+      <option value="balanced" selected>Balanced</option>
+    </select>
+    <div id="rec">Waiting for results...</div>
+    <table id="scores"></table>
+  </div>
+  <div class="card"><h2>Start-up and deploy time (seconds, lower is better)</h2><canvas id="cTime"></canvas></div>
+  <div class="card"><h2>Memory used (MB, lower is better)</h2><canvas id="cMem"></canvas></div>
+  <div class="card"><h2>Speed (requests per second, higher is better)</h2><canvas id="cRps"></canvas></div>
+  <div class="card"><h2>Latency (ms, lower is better)</h2><canvas id="cLat"></canvas></div>
+  <div class="card"><h2>Crash recovery time (seconds, lower is better)</h2><canvas id="cRec"></canvas></div>
+  <div class="card"><h2>Requests failed during a crash (%, lower is better)</h2><canvas id="cFail"></canvas></div>
+  <div class="card wide"><h2>All numbers</h2><table id="all"></table></div>
+  <div class="card wide"><h2>Live log</h2><div id="log"></div></div>
+</main>
+<script>
+const ORDER = ["kind","k3s","microk8s","swarm","nomad"];
+const COLORS = {kind:"#2f6fde", k3s:"#1a9e6f", microk8s:"#e8871e", swarm:"#7b4fd6", nomad:"#d23f57"};
+const METRICS = { startup_s:false, deploy_s:false, memory_mb:false, idle_cpu_pct:false, normal_rps:true,
+  normal_latency_ms:false, heavy_rps:true, heavy_p95_ms:false, heavy_failed:false, recovery_s:false, crash_failed_pct:false };
+const NEEDS = {
+  edge:{memory_mb:.40, idle_cpu_pct:.20, startup_s:.20, recovery_s:.20},
+  traffic:{heavy_rps:.35, heavy_p95_ms:.30, heavy_failed:.15, normal_rps:.20},
+  reliability:{recovery_s:.40, crash_failed_pct:.40, heavy_failed:.20},
+  setup:{startup_s:.40, deploy_s:.40, memory_mb:.20},
+  balanced:Object.fromEntries(Object.keys(METRICS).map(m=>[m,1/Object.keys(METRICS).length]))
+};
+let data = {tools:{}}; const charts = {};
+
+function bar(id, datasets, labels) {
+  if (typeof Chart === "undefined") return;   // charts need internet for Chart.js; tables still work
+  if (!charts[id]) charts[id] = new Chart(document.getElementById(id), { type:"bar",
+    data:{labels, datasets}, options:{animation:{duration:400}, plugins:{legend:{display:datasets.length>1}}, scales:{y:{beginAtZero:true}}}});
+  else { charts[id].data.labels = labels; charts[id].data.datasets.forEach((d,i)=>{ d.data = datasets[i].data; d.backgroundColor = datasets[i].backgroundColor; }); charts[id].update(); }
+}
+const SOFTEN = {"startup_s": 10, "deploy_s": 2, "memory_mb": 100, "idle_cpu_pct": 0.5, "normal_latency_ms": 1, "heavy_p95_ms": 10, "heavy_failed": 10, "recovery_s": 2, "crash_failed_pct": 0.5};
+function score(tools, m, v) {
+  const vals = Object.values(tools).map(t=>t[m]).filter(x=>x!=null);
+  if (v==null || !vals.length) return null;
+  if (METRICS[m]) { const b=Math.max(...vals); return b<=0?100:100*v/b; }
+  const k = SOFTEN[m]||0, b=Math.min(...vals);
+  return v+k<=0 ? 100 : 100*(b+k)/(v+k);
+}
+function scores(need, tools) {
+  const out = {};
+  for (const [k,t] of Object.entries(tools)) {
+    let tot=0, ws=0;
+    for (const [m,w] of Object.entries(NEEDS[need])) {
+      let s = score(tools, m, t[m]);
+      if (s==null && m==="crash_failed_pct" && t.load_balancer===false) s = 0;
+      if (s!=null) { tot+=w*s; ws+=w; }
+    }
+    out[k] = ws ? Math.round(10*tot/ws)/10 : null;
+  }
+  return out;
+}
+function render() {
+  const keys = ORDER.filter(k=>data.tools[k]);
+  const names = keys.map(k=>data.tools[k].name);
+  const col = keys.map(k=>COLORS[k]);
+  const val = m => keys.map(k=>data.tools[k][m] ?? null);
+  bar("cTime", [{label:"Start-up", data:val("startup_s"), backgroundColor:"#9db7ea"},
+                {label:"Deploy 3 copies", data:val("deploy_s"), backgroundColor:"#2f6fde"}], names);
+  bar("cMem", [{label:"MB", data:val("memory_mb"), backgroundColor:col}], names);
+  bar("cRps", [{label:"Normal traffic", data:val("normal_rps"), backgroundColor:"#9fd9c3"},
+               {label:"Heavy traffic", data:val("heavy_rps"), backgroundColor:"#1a9e6f"}], names);
+  bar("cLat", [{label:"Normal mean", data:val("normal_latency_ms"), backgroundColor:"#f3c58e"},
+               {label:"Heavy p95", data:val("heavy_p95_ms"), backgroundColor:"#e8871e"}], names);
+  bar("cRec", [{label:"Seconds", data:val("recovery_s"), backgroundColor:col}], names);
+  bar("cFail", [{label:"% failed", data:val("crash_failed_pct"), backgroundColor:col}], names);
+
+  const cols = [["startup_s","Start-up s"],["deploy_s","Deploy s"],["memory_mb","Memory MB"],["idle_cpu_pct","Idle CPU %"],
+    ["normal_rps","Normal req/s"],["normal_latency_ms","Normal ms"],["heavy_rps","Heavy req/s"],["heavy_p95_ms","Heavy p95 ms"],
+    ["heavy_failed","Heavy failed"],["recovery_s","Recovery s"],["crash_failed_pct","Crash failed %"]];
+  let h = "<tr><th>Tool</th>"+cols.map(c=>`<th>${c[1]}</th>`).join("")+"</tr>";
+  for (const k of keys) h += `<tr><td>${data.tools[k].name}</td>`+cols.map(c=>`<td>${data.tools[k][c[0]] ?? (c[0]==="crash_failed_pct" && data.tools[k].load_balancer===false ? "no LB" : "...")}</td>`).join("")+"</tr>";
+  document.getElementById("all").innerHTML = h;
+
+  const done = Object.fromEntries(keys.filter(k=>data.tools[k].done).map(k=>[k,data.tools[k]]));
+  const need = document.getElementById("need").value;
+  if (Object.keys(done).length) {
+    const sc = scores(need, done);
+    const ranked = Object.entries(sc).sort((a,b)=>(b[1]??0)-(a[1]??0));
+    document.getElementById("rec").innerHTML = `Recommendation: use <span class="best">${done[ranked[0][0]].name}</span> (score ${ranked[0][1]} out of 100).`;
+    document.getElementById("scores").innerHTML = "<tr><th>Rank</th><th style=\"text-align:left\">Tool</th><th>Score</th></tr>" +
+      ranked.map((r,i)=>`<tr><td>${i+1}</td><td style="text-align:left">${done[r[0]].name}</td><td>${r[1]}</td></tr>`).join("");
+  }
+  document.getElementById("status").textContent = data.status || "idle";
+  document.getElementById("updated").textContent = data.updated ? "last update " + data.updated.replace("T"," ") : "";
+  const lg = document.getElementById("log"); lg.textContent = (data.log||[]).join("\n"); lg.scrollTop = lg.scrollHeight;
+}
+async function poll() {
+  try { const r = await fetch("results/all.json?t="+Date.now()); if (r.ok) { data = await r.json(); render(); } } catch(e) {}
+}
+document.getElementById("need").addEventListener("change", render);
+poll(); setInterval(poll, 2000);
+</script>
+</body>
+</html>

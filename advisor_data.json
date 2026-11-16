@@ -1,0 +1,532 @@
+{
+ "version": "your own results (results/all.json)",
+ "tools": {
+  "kubernetes": {
+   "name": "Kubernetes",
+   "tested_as": "kind v0.24, 3 nodes in Docker",
+   "install": "kind create cluster   # to try it; kubeadm for real servers",
+   "docs": "https://kubernetes.io/docs/setup/",
+   "summary": "The full, standard Kubernetes. Biggest ecosystem and community, but the heaviest to run and learn."
+  },
+  "k3s": {
+   "name": "K3s",
+   "tested_as": "k3d v5, 3 nodes in Docker",
+   "install": "curl -sfL https://get.k3s.io | sh -",
+   "docs": "https://docs.k3s.io/",
+   "summary": "Certified Kubernetes in one small binary, made for edge, IoT and ARM boards."
+  },
+  "microk8s": {
+   "name": "MicroK8s",
+   "tested_as": "snap v1.35, 1 node in Ubuntu",
+   "install": "sudo snap install microk8s --classic",
+   "docs": "https://microk8s.io/docs",
+   "summary": "Certified Kubernetes from Canonical in one snap package, with add-ons you switch on with one command."
+  },
+  "swarm": {
+   "name": "Docker Swarm",
+   "tested_as": "Docker Engine swarm mode",
+   "install": "docker swarm init",
+   "docs": "https://docs.docker.com/engine/swarm/",
+   "summary": "Built into Docker. Uses the same Compose files, so it is the easiest step up from plain Docker."
+  },
+  "nomad": {
+   "name": "Nomad",
+   "tested_as": "Nomad 2.0 dev agent + NGINX load balancer",
+   "install": "nomad agent -dev   # after installing from developer.hashicorp.com/nomad/install",
+   "docs": "https://developer.hashicorp.com/nomad/docs",
+   "summary": "A simple single-binary scheduler from HashiCorp that runs containers and also plain programs, Java apps and VMs."
+  }
+ },
+ "measured": {
+  "kubernetes": {
+   "startup_s": 74.4,
+   "deploy_s": 7.17,
+   "memory_mb": 886,
+   "normal_rps": 5588.9,
+   "heavy_rps": 5474.24,
+   "heavy_p95_ms": 48.0,
+   "recovery_s": 2.21,
+   "crash_failed_pct": 0.0
+  },
+  "k3s": {
+   "startup_s": 74.0,
+   "deploy_s": 2.59,
+   "memory_mb": 1087,
+   "normal_rps": 3631.86,
+   "heavy_rps": 3561.1,
+   "heavy_p95_ms": 73.67,
+   "recovery_s": 2.25,
+   "crash_failed_pct": 0.0
+  },
+  "microk8s": {
+   "startup_s": 30.4,
+   "deploy_s": 2.2,
+   "memory_mb": 1236,
+   "normal_rps": 7121.22,
+   "heavy_rps": 7416.58,
+   "heavy_p95_ms": 32.33,
+   "recovery_s": 1.86,
+   "crash_failed_pct": 0.0
+  },
+  "swarm": {
+   "startup_s": 0.7,
+   "deploy_s": 1.37,
+   "memory_mb": 43,
+   "normal_rps": 4703.84,
+   "heavy_rps": 4742.32,
+   "heavy_p95_ms": 57.67,
+   "recovery_s": 5.91,
+   "crash_failed_pct": 0.44
+  },
+  "nomad": {
+   "startup_s": 4.3,
+   "deploy_s": 1.77,
+   "memory_mb": 174,
+   "normal_rps": 3945.8,
+   "heavy_rps": 5127.71,
+   "heavy_p95_ms": 49.67,
+   "recovery_s": 22.08,
+   "crash_failed_pct": 0.0
+  }
+ },
+ "criteria": {
+  "speed": {
+   "label": "Speed under load",
+   "source": "measured",
+   "parts": {
+    "heavy_rps": 0.6,
+    "normal_rps": 0.4
+   }
+  },
+  "latency": {
+   "label": "Low latency",
+   "source": "measured",
+   "parts": {
+    "heavy_p95_ms": 1.0
+   }
+  },
+  "recovery": {
+   "label": "Crash recovery",
+   "source": "measured",
+   "parts": {
+    "recovery_s": 0.5,
+    "crash_failed_pct": 0.5
+   }
+  },
+  "memory": {
+   "label": "Low memory",
+   "source": "measured",
+   "parts": {
+    "memory_mb": 1.0
+   }
+  },
+  "setup": {
+   "label": "Quick start-up",
+   "source": "measured",
+   "parts": {
+    "startup_s": 0.6,
+    "deploy_s": 0.4
+   }
+  },
+  "ease": {
+   "label": "Easy to learn",
+   "source": "rated"
+  },
+  "ecosystem": {
+   "label": "Kubernetes ecosystem",
+   "source": "rated"
+  },
+  "scale": {
+   "label": "Large clusters",
+   "source": "rated"
+  },
+  "edge": {
+   "label": "Edge and ARM devices",
+   "source": "rated"
+  },
+  "mixed": {
+   "label": "Non-container jobs",
+   "source": "rated"
+  }
+ },
+ "higher_is_better": {
+  "normal_rps": true,
+  "heavy_rps": true
+ },
+ "rated": {
+  "ease": {
+   "kubernetes": 40,
+   "k3s": 70,
+   "microk8s": 75,
+   "swarm": 95,
+   "nomad": 75
+  },
+  "ecosystem": {
+   "kubernetes": 100,
+   "k3s": 95,
+   "microk8s": 95,
+   "swarm": 30,
+   "nomad": 40
+  },
+  "scale": {
+   "kubernetes": 100,
+   "k3s": 80,
+   "microk8s": 70,
+   "swarm": 60,
+   "nomad": 95
+  },
+  "edge": {
+   "kubernetes": 30,
+   "k3s": 100,
+   "microk8s": 75,
+   "swarm": 70,
+   "nomad": 85
+  },
+  "mixed": {
+   "kubernetes": 15,
+   "k3s": 15,
+   "microk8s": 15,
+   "swarm": 10,
+   "nomad": 100
+  }
+ },
+ "questions": [
+  {
+   "id": "use",
+   "text": "What will you run?",
+   "type": "one",
+   "options": [
+    {
+     "id": "web",
+     "label": "A website or API with many users",
+     "w": {
+      "speed": 3,
+      "latency": 3,
+      "recovery": 2
+     }
+    },
+    {
+     "id": "edge",
+     "label": "Apps on small edge or IoT devices",
+     "w": {
+      "memory": 3,
+      "edge": 3,
+      "recovery": 1,
+      "setup": 1
+     }
+    },
+    {
+     "id": "learn",
+     "label": "Learning, testing or a class project",
+     "w": {
+      "ease": 3,
+      "setup": 3,
+      "memory": 1
+     }
+    },
+    {
+     "id": "critical",
+     "label": "A critical service that must not go down",
+     "w": {
+      "recovery": 3,
+      "scale": 2,
+      "ecosystem": 2,
+      "latency": 1
+     }
+    },
+    {
+     "id": "batch",
+     "label": "Batch jobs or a mix of different workloads",
+     "w": {
+      "mixed": 2,
+      "scale": 2,
+      "speed": 1,
+      "ease": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "ram",
+   "text": "How much memory does each machine have?",
+   "type": "one",
+   "options": [
+    {
+     "id": "small",
+     "label": "Less than 2 GB",
+     "w": {
+      "memory": 3,
+      "edge": 1
+     }
+    },
+    {
+     "id": "medium",
+     "label": "2 to 8 GB",
+     "w": {
+      "memory": 1
+     }
+    },
+    {
+     "id": "large",
+     "label": "More than 8 GB",
+     "w": {}
+    }
+   ]
+  },
+  {
+   "id": "nodes",
+   "text": "How many machines (nodes)?",
+   "type": "one",
+   "options": [
+    {
+     "id": "one",
+     "label": "Just one",
+     "w": {
+      "setup": 1
+     }
+    },
+    {
+     "id": "few",
+     "label": "2 to 10",
+     "w": {
+      "scale": 1
+     }
+    },
+    {
+     "id": "many",
+     "label": "More than 10",
+     "w": {
+      "scale": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "care",
+   "text": "What matters most to you? Pick any.",
+   "type": "many",
+   "options": [
+    {
+     "id": "speed",
+     "label": "Speed",
+     "w": {
+      "speed": 2
+     }
+    },
+    {
+     "id": "latency",
+     "label": "Low latency",
+     "w": {
+      "latency": 2
+     }
+    },
+    {
+     "id": "recovery",
+     "label": "Fast crash recovery",
+     "w": {
+      "recovery": 2
+     }
+    },
+    {
+     "id": "memory",
+     "label": "Low memory",
+     "w": {
+      "memory": 2
+     }
+    },
+    {
+     "id": "setup",
+     "label": "Quick setup",
+     "w": {
+      "setup": 2
+     }
+    },
+    {
+     "id": "ease",
+     "label": "Easy to learn",
+     "w": {
+      "ease": 2
+     }
+    },
+    {
+     "id": "ecosystem",
+     "label": "Helm charts and Kubernetes tools",
+     "w": {
+      "ecosystem": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "exp",
+   "text": "How well do you know Kubernetes?",
+   "type": "one",
+   "options": [
+    {
+     "id": "none",
+     "label": "Not at all",
+     "w": {
+      "ease": 2
+     }
+    },
+    {
+     "id": "some",
+     "label": "A little",
+     "w": {
+      "ease": 1
+     }
+    },
+    {
+     "id": "expert",
+     "label": "Very well",
+     "w": {
+      "ecosystem": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "noncont",
+   "text": "Do you need to run things that are not containers?",
+   "type": "one",
+   "options": [
+    {
+     "id": "no",
+     "label": "No, only containers",
+     "w": {}
+    },
+    {
+     "id": "yes",
+     "label": "Yes (plain programs, Java, VMs)",
+     "w": {
+      "mixed": 4
+     }
+    }
+   ]
+  }
+ ],
+ "defaults": {
+  "use": "web",
+  "ram": "medium",
+  "nodes": "few",
+  "care": [
+   "recovery"
+  ],
+  "exp": "some",
+  "noncont": "no"
+ },
+ "rules": [
+  {
+   "if": {
+    "ram": "small"
+   },
+   "tool": "kubernetes",
+   "factor": 0.6,
+   "note": "Full Kubernetes wants at least 2 GB per control-plane node."
+  },
+  {
+   "if": {
+    "ram": "small"
+   },
+   "tool": "microk8s",
+   "factor": 0.85,
+   "note": "MicroK8s needs about 540 MB and suggests 4 GB."
+  },
+  {
+   "if": {
+    "nodes": "many"
+   },
+   "tool": "microk8s",
+   "factor": 0.9,
+   "note": "KubeChaos tested MicroK8s on one node only."
+  },
+  {
+   "if": {
+    "nodes": "many"
+   },
+   "tool": "swarm",
+   "factor": 0.85,
+   "note": "Swarm has a smaller feature set for big clusters (no built-in autoscaling)."
+  },
+  {
+   "if": {
+    "noncont": "yes"
+   },
+   "tool": "kubernetes",
+   "factor": 0.8,
+   "note": "Kubernetes runs containers only; VMs need add-ons like KubeVirt."
+  },
+  {
+   "if": {
+    "noncont": "yes"
+   },
+   "tool": "k3s",
+   "factor": 0.8,
+   "note": "K3s runs containers only."
+  },
+  {
+   "if": {
+    "noncont": "yes"
+   },
+   "tool": "microk8s",
+   "factor": 0.8,
+   "note": "MicroK8s runs containers only."
+  },
+  {
+   "if": {
+    "noncont": "yes"
+   },
+   "tool": "swarm",
+   "factor": 0.8,
+   "note": "Swarm runs containers only."
+  }
+ ],
+ "soften": {
+  "startup_s": 10,
+  "deploy_s": 2,
+  "memory_mb": 100,
+  "idle_cpu_pct": 0.5,
+  "normal_latency_ms": 1,
+  "heavy_p95_ms": 10,
+  "heavy_failed": 10,
+  "recovery_s": 2,
+  "crash_failed_pct": 0.5
+ },
+ "rated_why": {
+  "ease": {
+   "kubernetes": "many concepts to learn (pods, services, deployments, kubeconfig)",
+   "k3s": "standard Kubernetes concepts, but installs with one command",
+   "microk8s": "standard Kubernetes concepts, add-ons switch on with one command",
+   "swarm": "reuses Docker and Compose files you may already know",
+   "nomad": "one binary and one short job file"
+  },
+  "ecosystem": {
+   "kubernetes": "the standard; every Helm chart and operator works",
+   "k3s": "CNCF-certified Kubernetes, so Helm charts work",
+   "microk8s": "CNCF-certified Kubernetes, so Helm charts work",
+   "swarm": "Compose files only, no Helm or operators",
+   "nomad": "own job format, few Kubernetes tools"
+  },
+  "scale": {
+   "kubernetes": "documented up to 5,000 nodes",
+   "k3s": "used for multi-node clusters with an HA embedded database",
+   "microk8s": "supports HA clusters of a few nodes",
+   "swarm": "works for small and medium clusters",
+   "nomad": "HashiCorp has tested 10,000+ nodes"
+  },
+  "edge": {
+   "kubernetes": "heavy control plane, needs 2 GB+",
+   "k3s": "single binary under 100 MB, ARM support, 512 MB minimum",
+   "microk8s": "runs on ARM, about 540 MB minimum",
+   "swarm": "anywhere Docker runs, including ARM",
+   "nomad": "single small binary, runs on ARM"
+  },
+  "mixed": {
+   "kubernetes": "containers only",
+   "k3s": "containers only",
+   "microk8s": "containers only",
+   "swarm": "containers only",
+   "nomad": "runs containers, plain programs, Java and VMs"
+  }
+ }
+}

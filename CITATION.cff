@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use KubeChaos, please cite it as below."
+title: "KubeChaos: Testing, Comparing and Recommending Container Orchestrators under Failure and Load"
+authors:
+  - family-names: Khadka
+    given-names: Dhiraj
+    affiliation: "Texas A&M University-San Antonio"
+date-released: "2026-11-16"
+repository-code: "https://github.com/DKhadka319/kubechaos"
+url: "https://dkhadka319.github.io/kubechaos/"
+license: MIT

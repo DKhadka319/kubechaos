@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>KubeChaos Advisor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Answer six questions and get a recommendation for Kubernetes, K3s, MicroK8s, Docker Swarm or Nomad, backed by crash-test benchmarks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: editorial award-site look. Light grey ground, black rules and sections, one deep-violet accent, oversized grotesk type. Single committed theme. */
+:root {
+  --ground: #EEEEEE; --paper: #FFFFFF; --ink: #0A0A0A; --muted: #4A4A4A; --line: #0A0A0A;
+  --accent: #5B3FD6; --accent-ink: #FFFFFF; --accent-soft: #A895FF;
+  --night: #0A0A0A; --night-line: #3A3A3A; --night-muted: #BDBDBD; --night-track: #1E1E1E;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box }
+html { scroll-behavior: smooth }
+body { background: var(--ground); color: var(--ink); font: 16px/1.5 var(--body); }
+a { color: inherit }
+.wrap { max-width: 1360px; margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase }
+button, input { font: inherit }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px }
+
+/* header */
+header.top { border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); background: var(--ground); z-index: 5 }
+@media (max-width: 700px) { header.top { position: static } }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--ground); z-index: 10 }
+header.top .wrap { padding-block: 16px; display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; justify-content: space-between }
+.logo { font: 700 22px/1 var(--display); letter-spacing: -.02em; text-decoration: none }
+.logo b, .dot { color: var(--accent) }
+nav.links { display: flex; flex-wrap: wrap; gap: 24px }
+nav.links a { text-decoration: none }
+nav.links a:hover { color: var(--accent) }
+.pill-link { text-decoration: none; background: var(--ink); color: #FFF; padding: 11px 18px; border-radius: 999px }
+.pill-link:hover { background: var(--accent) }
+
+/* hero */
+.hero { padding-block: 72px 56px }
+.hero h1 { margin: 26px 0 0; font: 700 clamp(48px, 9vw, 128px)/.92 var(--display); letter-spacing: -.045em; max-width: 1200px; text-wrap: balance }
+.hero h1 span { color: var(--accent) }
+.hero-row { margin-top: 44px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; justify-content: space-between }
+.hero-row p { margin: 0; max-width: 540px; font-size: 19px }
+.btns { display: flex; flex-wrap: wrap; gap: 12px }
+.btn { text-decoration: none; padding: 17px 27px; border-radius: 999px; font-weight: 600; border: 1px solid var(--ink) }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.btn.primary:hover { background: var(--ink); border-color: var(--ink) }
+.btn:not(.primary):hover { background: var(--ink); color: #FFF }
+
+.stats { border-block: 1px solid var(--line) }
+.stats .wrap { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) }
+.stat { padding: 26px 22px; border-right: 1px solid var(--line); min-width: 0 }
+.stat:first-child { padding-left: 0 } .stat:last-child { border-right: 0 }
+.stat .n { font: 700 clamp(40px, 5vw, 64px)/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums }
+.stat .n small { font-size: .5em }
+.stat .l { margin-top: 10px; font-size: 14px; color: var(--muted) }
+@media (max-width: 820px) { .stats .wrap { grid-template-columns: repeat(2, minmax(0, 1fr)) } .stat:nth-child(2) { border-right: 0 } .stat:nth-child(3) { padding-left: 0; border-top: 1px solid var(--line) } .stat:nth-child(4) { border-top: 1px solid var(--line) } }
+
+.marquee { background: var(--accent); color: var(--accent-ink); overflow: hidden; white-space: nowrap; padding-block: 20px; font: 700 clamp(28px, 4vw, 44px)/1 var(--display); letter-spacing: -.02em }
+.marquee div { display: inline-block; animation: slide 30s linear infinite }
+@keyframes slide { to { transform: translateX(-50%) } }
+
+/* section heads */
+section.block { padding-block: 96px }
+.head { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: flex-end; margin-bottom: 48px }
+.head h2 { margin: 0; font: 700 clamp(44px, 6vw, 72px)/.95 var(--display); letter-spacing: -.035em; text-wrap: balance }
+
+/* advisor */
+.advisor { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start }
+form#form { flex: 999 1 560px; min-width: 0; border-top: 1px solid var(--line); margin: 0 }
+fieldset { margin: 0; padding: 24px 0; border: 0; border-bottom: 1px solid var(--line); min-width: 0 }
+legend .qn { display: inline-block; width: 64px; font: 400 13px/1 var(--mono); vertical-align: 4px }
+legend { float: left; width: 100%; padding: 0; margin-bottom: 14px; font: 500 24px/1.25 var(--display); letter-spacing: -.01em }
+legend small { font: 400 15px var(--body); color: var(--muted); margin-left: 8px }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; clear: both; padding-left: 64px }
+@media (max-width: 600px) { .opts { padding-left: 0 } }
+.opt { position: relative }
+.opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer }
+.opt span { display: block; border: 1px solid var(--ink); padding: 11px 18px; border-radius: 999px; font-size: 15px; cursor: pointer; transition: background .15s, color .15s }
+.opt:hover span { background: var(--paper) }
+.opt input:checked + span { background: var(--ink); color: #FFF }
+.opt input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 3px }
+
+.card { flex: 1 1 400px; min-width: 0; background: var(--accent); color: var(--accent-ink); border-radius: 28px; padding: 36px; display: flex; flex-direction: column; gap: 26px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px) }
+@media (max-width: 1000px) { .card { position: static } }
+.card .top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font: 400 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase }
+.card:not(.locked) .name { font: 700 clamp(44px, 5.2vw, 76px)/.92 var(--display); letter-spacing: -.045em; overflow-wrap: normal; word-break: keep-all }
+.card p { margin: 0 }
+.rank { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px }
+.rank li { display: grid; grid-template-columns: 110px minmax(0, 1fr) 42px; gap: 12px; align-items: center }
+.rank .track { height: 8px; background: rgba(255,255,255,.25); border-radius: 99px; overflow: hidden }
+.rank .fill { display: block; height: 100%; background: rgba(255,255,255,.65); border-radius: 99px; transition: width .4s ease }
+.rank li.first { font-weight: 700 } .rank li.first .fill { background: #FFF }
+.rank .v { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums }
+.why { margin: 0; padding: 22px 0 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; border-top: 1px solid rgba(255,255,255,.35) }
+.why li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px }
+.why .mk { font-family: var(--mono); font-weight: 500 }
+.cmdbox { background: var(--night); color: #EEE; border-radius: 14px; padding: 14px 16px; display: flex; justify-content: space-between; gap: 12px; align-items: center; font: 14px/1.4 var(--mono) }
+.cmdbox code { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0 }
+.copy { cursor: pointer; background: #FFF; color: var(--ink); border: 0; border-radius: 999px; padding: 8px 14px; font: 500 12px/1 var(--body); flex: none }
+.copy:hover { background: var(--accent-soft) }
+.card .docs { font-size: 14px }
+.card .note { font-size: 13px; opacity: .85 }
+.weights { display: flex; flex-wrap: wrap; gap: 6px }
+.weights span { font: 400 12px/1 var(--mono); padding: 6px 8px; border: 1px solid rgba(255,255,255,.45); border-radius: 999px }
+
+/* results */
+.night { background: var(--night); color: #FFF }
+.night .head h2 span { color: var(--accent-soft) }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px }
+@media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr) } }
+.charts h3 { margin: 0 0 24px; font-weight: 400; color: var(--night-muted) }
+.bars { display: flex; flex-direction: column; gap: 16px }
+.bars div { display: grid; grid-template-columns: 120px minmax(0, 1fr) 80px; gap: 14px; align-items: center }
+.bars .t { height: 26px; background: var(--night-track) }
+.bars .t i { display: block; height: 100%; background: #FFF }
+.bars .best .t i { background: var(--accent) }
+.bars .num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums }
+.tablebox { margin-top: 56px; overflow-x: auto; border-top: 1px solid var(--night-line) }
+table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 15px }
+th { font: 400 12px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--night-muted); text-align: right; padding: 16px 10px; vertical-align: bottom }
+td { text-align: right; padding: 14px 10px; border-top: 1px solid var(--night-line); font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+th:first-child, td:first-child { text-align: left; padding-left: 0; font-family: var(--body) }
+td.na { color: #8A8A8A }
+.matrix td.hi { color: var(--accent-soft); font-weight: 500 }
+.matrix th.off, .matrix td.off { opacity: .4 }
+.matrix th .w { display: block; color: var(--accent-soft); margin-top: 4px }
+.matrix tr.first td:first-child { color: var(--accent-soft); font-weight: 600 }
+.subhead { margin: 72px 0 6px; font: 700 32px/1.1 var(--display); letter-spacing: -.02em }
+.night .lede { color: var(--night-muted); margin: 0; max-width: 70ch }
+.foot-note { margin-top: 20px; font-size: 13px; color: var(--night-muted); max-width: 90ch }
+
+/* method */
+.steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line) }
+.steps li { padding: 28px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.steps li:first-child { padding-left: 0 } .steps li:last-child { border-right: 0; padding-right: 0 }
+.steps h3 { margin: 0; font: 700 32px/1.05 var(--display); letter-spacing: -.02em }
+.steps p { margin: 0; color: var(--muted) }
+@media (max-width: 820px) { .steps { grid-template-columns: minmax(0, 1fr) } .steps li { padding: 24px 0; border-right: 0; border-bottom: 1px solid var(--line) } }
+
+/* reveal */
+legend .qn.done { color: var(--accent) }
+.form-foot { padding-top: 28px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between }
+.form-foot .hint { font: 400 13px/1.4 var(--mono); color: var(--muted) }
+.form-foot .hint.ok { color: var(--accent) }
+.reveal { cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: #FFF; padding: 21px 34px; border-radius: 999px; font-weight: 600; font-size: 18px; box-shadow: 0 10px 30px rgba(91,63,214,.35); transition: background .15s, box-shadow .15s }
+.reveal:hover { background: var(--ink); border-color: var(--ink) }
+.reveal:disabled { cursor: not-allowed; background: #C9C9C9; border-color: #C9C9C9; color: #6A6A6A; box-shadow: none }
+.reveal.again { background: transparent; color: var(--ink); border-color: var(--ink); box-shadow: none }
+.reveal.again:hover { background: var(--ink); color: #FFF }
+.reveal.again.pulse { background: var(--accent); color: #FFF; border-color: var(--accent) }
+.card.locked { background: transparent; color: var(--ink); border: 1.5px dashed var(--ink); min-height: 560px }
+.card .qmark { font: 700 clamp(120px, 14vw, 200px)/.8 var(--display); letter-spacing: -.06em; color: var(--accent) }
+.card .lock-h { font: 700 clamp(26px, 2.6vw, 34px)/1.05 var(--display); letter-spacing: -.03em }
+.card .lock-p { color: var(--muted) }
+.prog { margin-top: auto; display: flex; flex-direction: column; gap: 10px }
+.prog .row { display: flex; justify-content: space-between; font: 400 13px/1 var(--mono) }
+.prog .bar { height: 10px; border-radius: 99px; background: #D6D6D6; overflow: hidden }
+.prog .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s ease }
+.card.revealed { animation: pop .55s cubic-bezier(.2,.8,.2,1) }
+@keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.97) } }
+.card.stale > :not(.stalebar) { opacity: .35 }
+.stalebar { background: var(--ink); color: #FFF; border-radius: 14px; padding: 14px 16px; font: 500 14px/1.4 var(--body) }
+
+/* terminal guide */
+.guide-head { padding-block: 96px 8px }
+.guide-head h2 { margin: 24px 0 0; font: 700 clamp(48px, 7vw, 96px)/.92 var(--display); letter-spacing: -.045em; max-width: 1150px; text-wrap: balance }
+.guide-head h2 span { color: var(--accent) }
+.guide-intro { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between }
+.guide-intro p { margin: 0; max-width: 560px; font-size: 19px }
+.part-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 16px; padding: 56px 0 20px }
+.part-head h3 { margin: 0; font: 700 clamp(30px, 3.4vw, 40px)/1.05 var(--display); letter-spacing: -.03em }
+.gstep { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1.35fr); gap: 40px; padding: 40px 0; border-top: 1px solid var(--line); align-items: start }
+.gstep .num { font: 700 clamp(56px, 7vw, 88px)/.85 var(--display); letter-spacing: -.05em; color: var(--accent) }
+.gstep .txt { display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.gstep h4 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.05 var(--display); letter-spacing: -.03em }
+.gstep p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--muted); max-width: 440px }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chips span { font: 400 12px/1.2 var(--mono); letter-spacing: .04em; border: 1px solid var(--line); padding: 7px 12px; border-radius: 999px }
+.tw { background: var(--night); border-radius: 20px; overflow: hidden; min-width: 0 }
+.tw .bar { display: flex; align-items: center; gap: 8px; padding: 12px 14px 12px 18px; border-bottom: 1px solid #2A2A2A }
+.tw .bar i { width: 12px; height: 12px; border-radius: 50%; background: #3A3A3A }
+.tw .bar b { margin-left: 10px; font: 400 12px/1 var(--mono); color: #8A8A8A; letter-spacing: .06em; text-transform: uppercase }
+.tw .bar .copy { margin-left: auto; background: var(--accent-soft) }
+.tw .bar .copy:hover { background: #FFF }
+.tw pre { margin: 0; padding: 20px 22px; font: 15px/1.75 var(--mono); color: #BDBDBD; overflow-x: auto }
+.tw .p { color: var(--accent-soft) } .tw .k { color: #FFF } .tw .h { color: var(--accent-soft) } .tw .c { color: #7A7A7A }
+.night .part-head { padding-top: 80px }
+.night .part-head .mono { color: var(--accent-soft) }
+.night .part-head h3 { font-size: clamp(40px, 5vw, 64px); line-height: .95; letter-spacing: -.04em; max-width: 820px }
+.night .part-head h3 span { color: var(--accent-soft) }
+.night .gstep { border-top-color: var(--night-line) }
+.night .gstep .num { color: var(--accent-soft) }
+.night .gstep p { color: var(--night-muted) }
+.night .chips span { border-color: #555 }
+.night .tw { background: #151515; border: 1px solid #333 }
+.guide-b { padding-bottom: 96px }
+@media (max-width: 960px) { .gstep { grid-template-columns: 64px minmax(0, 1fr); gap: 20px 20px } .gstep .tw { grid-column: 1 / -1 } }
+
+/* cite */
+.cite { border-top: 1px solid var(--line) }
+.cite .wrap { padding-block: 72px; display: flex; flex-wrap: wrap; gap: 40px; justify-content: space-between }
+.cite .wrap > div:first-child { flex: 1 1 320px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start }
+.cite h2 { margin: 0; font: 700 40px/1.1 var(--display); letter-spacing: -.03em }
+.bib { flex: 999 1 520px; min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 24px; font: 14px/1.7 var(--mono); white-space: pre; overflow-x: auto; margin: 0 }
+.copy.dark { background: var(--ink); color: #FFF; padding: 12px 18px; font-size: 14px }
+.copy.dark:hover { background: var(--accent) }
+
+footer { background: var(--night); color: #EEE }
+footer .wrap { padding-block: 56px 40px; display: flex; flex-direction: column; gap: 32px }
+.big { font: 700 clamp(64px, 15vw, 200px)/.8 var(--display); letter-spacing: -.06em; overflow-wrap: anywhere }
+.big span { color: var(--accent-soft) }
+footer .meta { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; font-size: 14px; color: var(--night-muted) }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto } .marquee div { animation: none } .card.revealed { animation: none } * { transition: none !important } }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top">KubeChaos<b>.</b></a>
+    <nav class="links mono" aria-label="Main">
+      <a href="#advisor">Advisor</a><a href="#results">Results</a><a href="#method">Method</a><a href="#cli">Guide</a><a href="#cite">Cite</a>
+    </nav>
+    <a class="pill-link mono" id="gh" href="https://github.com/DKhadka319/kubechaos" target="_blank" rel="noopener">Get the code ↗</a>
+  </div>
+</header>
+
+<main>
+<section class="hero wrap" id="top">
+  <p class="mono" style="margin:0">Open benchmark · 5 orchestrators · v<span id="ver"></span></p>
+  <h1>Pick the right orchestrator. <span>Backed by crash tests.</span></h1>
+  <div class="hero-row">
+    <p>We ran the same app on Kubernetes, K3s, MicroK8s, Docker Swarm and Nomad, then broke it on purpose while users kept sending traffic. Answer six questions and get the one that fits your job.</p>
+    <div class="btns"><a class="btn primary" href="#advisor">Start the advisor →</a><a class="btn" href="#results">See the results</a></div>
+  </div>
+</section>
+
+<section class="stats" aria-label="Key numbers"><div class="wrap" id="stats"></div></section>
+<div class="marquee" aria-hidden="true"><div id="marq"></div></div>
+
+<section class="block wrap" id="advisor">
+  <div class="head"><h2>Tell us about<br>your project.</h2><p class="mono" style="margin:0">01 / Advisor</p></div>
+  <div class="advisor">
+    <form id="form"></form>
+    <aside class="card" id="result" aria-live="polite" aria-label="Your recommendation"></aside>
+  </div>
+</section>
+
+<section class="night" id="results">
+  <div class="wrap block">
+    <div class="head"><h2>Same app.<br>Same tests.<br><span>Very different results.</span></h2><p class="mono" style="margin:0">02 / Results</p></div>
+    <div class="charts">
+      <div><h3 class="mono">Heavy traffic · requests per second</h3><div class="bars" id="bars1"></div></div>
+      <div><h3 class="mono">Crash recovery · seconds, shorter is better</h3><div class="bars" id="bars2"></div></div>
+    </div>
+    <div class="tablebox"><table id="bench"></table></div>
+    <p class="foot-note" id="benchnote"></p>
+    <h3 class="subhead">Decision matrix</h3>
+    <p class="lede">Each tool scored 0 to 100 on every criterion. Measured criteria come from the tests above; rated ones come from each tool's documentation. After you press Reveal, the columns that do not count for your answers fade out and your score appears.</p>
+    <div class="tablebox matrix"><table id="matrix"></table></div>
+  </div>
+</section>
+
+<section class="block wrap" id="method">
+  <div class="head"><h2>How we test.</h2><p class="mono" style="margin:0">03 / Method</p></div>
+  <ol class="steps">
+    <li><span class="mono">Step 1</span><h3>Same app everywhere</h3><p>Three copies of one web server on every orchestrator, on the same PC, one tool at a time.</p></li>
+    <li><span class="mono">Step 2</span><h3>Load it, then break it</h3><p>5,000 and 20,000 requests, then one copy is killed while traffic keeps coming. Every test runs three times.</p></li>
+    <li><span class="mono">Step 3</span><h3>Score what matters to you</h3><p>Your answers weight the measured numbers and documented features, and the advisor explains its pick. Anything not measured counts as average, so it never helps a tool.</p></li>
+  </ol>
+</section>
+
+<section id="cli">
+  <div class="wrap guide-head">
+    <p class="mono" style="margin:0">04 / Run it on your computer</p>
+    <h2>Step-by-step guide. <span>Which container tool is best for you?</span></h2>
+    <div class="guide-intro">
+      <p>Same advisor as this page, in Python. Steps 1 to 4 give you advice in one minute. Steps 5 to 8 test your own computer, so the advice fits your machine.</p>
+      <div class="btns"><a class="btn primary" href="#quick">Quick advice · 1 min</a><a class="btn" href="#custom">Test my computer · 1 hour</a></div>
+    </div>
+  </div>
+  <div class="wrap" id="quick" style="padding-bottom:80px">
+    <div class="part-head"><h3>Part A · Quick advice</h3><span class="mono">Needs · Python 3 only</span></div>
+    <div class="gstep"><div class="num">01</div><div class="txt"><h4>Open your terminal and check Python</h4><p>The advisor only needs Python 3.8 or newer. Nothing else to install. On Windows, type <b>python</b> instead of <b>python3</b>.</p><div class="chips"><span>Windows · Start → PowerShell</span><span>Mac · ⌘ Space → Terminal</span><span>Linux · Ctrl Alt T</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Terminal</b><button class="copy" type="button" data-copy="python3 --version">Copy</button></div><pre><span class="p">$</span> <span class="k">python3 --version</span>
+Python 3.12.3</pre></div></div><div class="gstep"><div class="num">02</div><div class="txt"><h4>Download KubeChaos from GitHub</h4><p>This copies the tool and our measured results to your computer. No git? Click <b>Download ZIP</b> on the GitHub page, unzip it, and open the folder in your terminal.</p><div class="chips"><span>GitHub · github.com/DKhadka319/kubechaos</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Terminal</b><button class="copy" type="button" data-copy="git clone https://github.com/DKhadka319/kubechaos
+cd kubechaos">Copy</button></div><pre><span class="p">$</span> <span class="k">git clone https://github.com/DKhadka319/kubechaos</span>
+<span class="p">$</span> <span class="k">cd kubechaos</span></pre></div></div><div class="gstep"><div class="num">03</div><div class="txt"><h4>Start the advisor and answer 6 questions</h4><p>Type the number of your answer and press Enter. Press Enter alone to keep the default. Same six questions as this page.</p><div class="chips"><span>Takes about 1 minute</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Terminal</b><button class="copy" type="button" data-copy="python3 advisor.py">Copy</button></div><pre><span class="p">$</span> <span class="k">python3 advisor.py</span>
+
+What will you run?
+  1. A website or API with many users
+  2. Apps on small edge or IoT devices
+  3. Learning, testing or a class project
+<span class="h">  Your choice (number) [1]: 2</span></pre></div></div><div class="gstep"><div class="num">04</div><div class="txt"><h4>Read your recommendation</h4><p>You get a ranking of all five tools, the reasons behind the winner, and the one command to install it.</p><div class="chips"><span>Done ✓</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Terminal</b></div><pre>  1. Docker Swarm   81.4  ####################
+  2. Nomad          67.8  ################
+  3. K3s            59.7  ##############
+
+<span class="h">Recommendation: use Docker Swarm.</span>
+  + Low memory: used 43 MB when idle
+  + Quick start-up: ready in 0.7 s
+<span class="h">Get started:  docker swarm init</span></pre></div></div>
+  </div>
+  <div class="night" id="custom">
+    <div class="wrap guide-b">
+      <div class="part-head"><div><p class="mono" style="margin:0 0 20px">Part B · Custom advice for your machine</p><h3>Want advice from <span>your own</span> numbers?</h3></div><span class="mono" style="color:var(--night-muted)">Needs · Docker · 8 GB RAM · Linux or Windows WSL2</span></div>
+      <div class="gstep"><div class="num">05</div><div class="txt"><h4>Install Docker and the five tools</h4><p>Install Docker Desktop first. On Windows, turn on WSL integration and use the Ubuntu terminal. Then run our setup script, which installs Kubernetes, K3s, MicroK8s and Nomad for you.</p><div class="chips"><span>Windows · Ubuntu (WSL2)</span><span>Linux</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Ubuntu</b><button class="copy" type="button" data-copy="bash setup.sh">Copy</button></div><pre><span class="c"># inside the kubechaos folder</span>
+<span class="p">$</span> <span class="k">bash setup.sh</span>
+Setup done. Close Ubuntu and open it again.</pre></div></div><div class="gstep"><div class="num">06</div><div class="txt"><h4>Run the crash and load tests on your computer</h4><p>KubeChaos starts each tool one by one, deploys the same web app, sends traffic, then kills a copy on purpose and times the recovery. Leave it running.</p><div class="chips"><span>Takes about 1 hour</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Ubuntu</b><button class="copy" type="button" data-copy="python3 kubechaos.py run --fresh">Copy</button></div><pre><span class="p">$</span> <span class="k">python3 kubechaos.py run --fresh</span>
+[1/5] Kubernetes  start-up 74.4 s ✓
+      heavy load  5,474 req/s ✓
+      crash test  recovered in 2.2 s ✓
+[2/5] K3s ...
+<span class="h">Saved results/all.json</span></pre></div></div><div class="gstep"><div class="num">07</div><div class="txt"><h4>See your own results dashboard</h4><p>Opens a live dashboard with your numbers. Keep the terminal open while you look at it.</p><div class="chips"><span>Browser · localhost:8765</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Ubuntu</b><button class="copy" type="button" data-copy="python3 kubechaos.py dashboard">Copy</button></div><pre><span class="p">$</span> <span class="k">python3 kubechaos.py dashboard</span>
+<span class="h">Dashboard at http://localhost:8765</span></pre></div></div><div class="gstep"><div class="num">08</div><div class="txt"><h4>Get advice from your numbers</h4><p>Same six questions, but now the scores come from your computer, not ours. This is the recommendation built for your job and your machine.</p><div class="chips"><span>Done ✓</span></div></div><div class="tw"><div class="bar"><i></i><i></i><i></i><b>Ubuntu</b><button class="copy" type="button" data-copy="python3 kubechaos.py advise">Copy</button></div><pre><span class="p">$</span> <span class="k">python3 kubechaos.py advise</span>
+Using your results: results/all.json
+
+<span class="h">Recommendation: use ...</span></pre></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cite" id="cite">
+  <div class="wrap">
+    <div>
+      <p class="mono" style="margin:0">05 / Cite</p>
+      <h2>Used KubeChaos in your work? Please cite it.</h2>
+      <button class="copy dark" id="copybib" type="button">Copy BibTeX</button>
+    </div>
+    <pre class="bib" id="bib"></pre>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="big" aria-hidden="true">KubeChaos<span>.</span></div>
+    <div class="meta"><span>By Dhiraj Khadka, Texas A&amp;M University-San Antonio, 2026</span><span>Results come from one machine. Test your own before you decide.</span></div>
+  </div>
+</footer>
+
+<script>
+const DATA = {"version":"your own results (results/all.json)","tools":{"kubernetes":{"name":"Kubernetes","tested_as":"kind v0.24, 3 nodes in Docker","install":"kind create cluster   # to try it; kubeadm for real servers","docs":"https://kubernetes.io/docs/setup/","summary":"The full, standard Kubernetes. Biggest ecosystem and community, but the heaviest to run and learn."},"k3s":{"name":"K3s","tested_as":"k3d v5, 3 nodes in Docker","install":"curl -sfL https://get.k3s.io | sh -","docs":"https://docs.k3s.io/","summary":"Certified Kubernetes in one small binary, made for edge, IoT and ARM boards."},"microk8s":{"name":"MicroK8s","tested_as":"snap v1.35, 1 node in Ubuntu","install":"sudo snap install microk8s --classic","docs":"https://microk8s.io/docs","summary":"Certified Kubernetes from Canonical in one snap package, with add-ons you switch on with one command."},"swarm":{"name":"Docker Swarm","tested_as":"Docker Engine swarm mode","install":"docker swarm init","docs":"https://docs.docker.com/engine/swarm/","summary":"Built into Docker. Uses the same Compose files, so it is the easiest step up from plain Docker."},"nomad":{"name":"Nomad","tested_as":"Nomad 2.0 dev agent + NGINX load balancer","install":"nomad agent -dev   # after installing from developer.hashicorp.com/nomad/install","docs":"https://developer.hashicorp.com/nomad/docs","summary":"A simple single-binary scheduler from HashiCorp that runs containers and also plain programs, Java apps and VMs."}},"measured":{"kubernetes":{"startup_s":74.4,"deploy_s":7.17,"memory_mb":886,"normal_rps":5588.9,"heavy_rps":5474.24,"heavy_p95_ms":48.0,"recovery_s":2.21,"crash_failed_pct":0.0},"k3s":{"startup_s":74.0,"deploy_s":2.59,"memory_mb":1087,"normal_rps":3631.86,"heavy_rps":3561.1,"heavy_p95_ms":73.67,"recovery_s":2.25,"crash_failed_pct":0.0},"microk8s":{"startup_s":30.4,"deploy_s":2.2,"memory_mb":1236,"normal_rps":7121.22,"heavy_rps":7416.58,"heavy_p95_ms":32.33,"recovery_s":1.86,"crash_failed_pct":0.0},"swarm":{"startup_s":0.7,"deploy_s":1.37,"memory_mb":43,"normal_rps":4703.84,"heavy_rps":4742.32,"heavy_p95_ms":57.67,"recovery_s":5.91,"crash_failed_pct":0.44},"nomad":{"startup_s":4.3,"deploy_s":1.77,"memory_mb":174,"normal_rps":3945.8,"heavy_rps":5127.71,"heavy_p95_ms":49.67,"recovery_s":22.08,"crash_failed_pct":0.0}},"criteria":{"speed":{"label":"Speed under load","source":"measured","parts":{"heavy_rps":0.6,"normal_rps":0.4}},"latency":{"label":"Low latency","source":"measured","parts":{"heavy_p95_ms":1.0}},"recovery":{"label":"Crash recovery","source":"measured","parts":{"recovery_s":0.5,"crash_failed_pct":0.5}},"memory":{"label":"Low memory","source":"measured","parts":{"memory_mb":1.0}},"setup":{"label":"Quick start-up","source":"measured","parts":{"startup_s":0.6,"deploy_s":0.4}},"ease":{"label":"Easy to learn","source":"rated"},"ecosystem":{"label":"Kubernetes ecosystem","source":"rated"},"scale":{"label":"Large clusters","source":"rated"},"edge":{"label":"Edge and ARM devices","source":"rated"},"mixed":{"label":"Non-container jobs","source":"rated"}},"higher_is_better":{"normal_rps":true,"heavy_rps":true},"rated":{"ease":{"kubernetes":40,"k3s":70,"microk8s":75,"swarm":95,"nomad":75},"ecosystem":{"kubernetes":100,"k3s":95,"microk8s":95,"swarm":30,"nomad":40},"scale":{"kubernetes":100,"k3s":80,"microk8s":70,"swarm":60,"nomad":95},"edge":{"kubernetes":30,"k3s":100,"microk8s":75,"swarm":70,"nomad":85},"mixed":{"kubernetes":15,"k3s":15,"microk8s":15,"swarm":10,"nomad":100}},"questions":[{"id":"use","text":"What will you run?","type":"one","options":[{"id":"web","label":"A website or API with many users","w":{"speed":3,"latency":3,"recovery":2}},{"id":"edge","label":"Apps on small edge or IoT devices","w":{"memory":3,"edge":3,"recovery":1,"setup":1}},{"id":"learn","label":"Learning, testing or a class project","w":{"ease":3,"setup":3,"memory":1}},{"id":"critical","label":"A critical service that must not go down","w":{"recovery":3,"scale":2,"ecosystem":2,"latency":1}},{"id":"batch","label":"Batch jobs or a mix of different workloads","w":{"mixed":2,"scale":2,"speed":1,"ease":1}}]},{"id":"ram","text":"How much memory does each machine have?","type":"one","options":[{"id":"small","label":"Less than 2 GB","w":{"memory":3,"edge":1}},{"id":"medium","label":"2 to 8 GB","w":{"memory":1}},{"id":"large","label":"More than 8 GB","w":{}}]},{"id":"nodes","text":"How many machines (nodes)?","type":"one","options":[{"id":"one","label":"Just one","w":{"setup":1}},{"id":"few","label":"2 to 10","w":{"scale":1}},{"id":"many","label":"More than 10","w":{"scale":3}}]},{"id":"care","text":"What matters most to you? Pick any.","type":"many","options":[{"id":"speed","label":"Speed","w":{"speed":2}},{"id":"latency","label":"Low latency","w":{"latency":2}},{"id":"recovery","label":"Fast crash recovery","w":{"recovery":2}},{"id":"memory","label":"Low memory","w":{"memory":2}},{"id":"setup","label":"Quick setup","w":{"setup":2}},{"id":"ease","label":"Easy to learn","w":{"ease":2}},{"id":"ecosystem","label":"Helm charts and Kubernetes tools","w":{"ecosystem":2}}]},{"id":"exp","text":"How well do you know Kubernetes?","type":"one","options":[{"id":"none","label":"Not at all","w":{"ease":2}},{"id":"some","label":"A little","w":{"ease":1}},{"id":"expert","label":"Very well","w":{"ecosystem":1}}]},{"id":"noncont","text":"Do you need to run things that are not containers?","type":"one","options":[{"id":"no","label":"No, only containers","w":{}},{"id":"yes","label":"Yes (plain programs, Java, VMs)","w":{"mixed":4}}]}],"defaults":{"use":"web","ram":"medium","nodes":"few","care":["recovery"],"exp":"some","noncont":"no"},"rules":[{"if":{"ram":"small"},"tool":"kubernetes","factor":0.6,"note":"Full Kubernetes wants at least 2 GB per control-plane node."},{"if":{"ram":"small"},"tool":"microk8s","factor":0.85,"note":"MicroK8s needs about 540 MB and suggests 4 GB."},{"if":{"nodes":"many"},"tool":"microk8s","factor":0.9,"note":"KubeChaos tested MicroK8s on one node only."},{"if":{"nodes":"many"},"tool":"swarm","factor":0.85,"note":"Swarm has a smaller feature set for big clusters (no built-in autoscaling)."},{"if":{"noncont":"yes"},"tool":"kubernetes","factor":0.8,"note":"Kubernetes runs containers only; VMs need add-ons like KubeVirt."},{"if":{"noncont":"yes"},"tool":"k3s","factor":0.8,"note":"K3s runs containers only."},{"if":{"noncont":"yes"},"tool":"microk8s","factor":0.8,"note":"MicroK8s runs containers only."},{"if":{"noncont":"yes"},"tool":"swarm","factor":0.8,"note":"Swarm runs containers only."}],"soften":{"startup_s":10,"deploy_s":2,"memory_mb":100,"idle_cpu_pct":0.5,"normal_latency_ms":1,"heavy_p95_ms":10,"heavy_failed":10,"recovery_s":2,"crash_failed_pct":0.5},"rated_why":{"ease":{"kubernetes":"many concepts to learn (pods, services, deployments, kubeconfig)","k3s":"standard Kubernetes concepts, but installs with one command","microk8s":"standard Kubernetes concepts, add-ons switch on with one command","swarm":"reuses Docker and Compose files you may already know","nomad":"one binary and one short job file"},"ecosystem":{"kubernetes":"the standard; every Helm chart and operator works","k3s":"CNCF-certified Kubernetes, so Helm charts work","microk8s":"CNCF-certified Kubernetes, so Helm charts work","swarm":"Compose files only, no Helm or operators","nomad":"own job format, few Kubernetes tools"},"scale":{"kubernetes":"documented up to 5,000 nodes","k3s":"used for multi-node clusters with an HA embedded database","microk8s":"supports HA clusters of a few nodes","swarm":"works for small and medium clusters","nomad":"HashiCorp has tested 10,000+ nodes"},"edge":{"kubernetes":"heavy control plane, needs 2 GB+","k3s":"single binary under 100 MB, ARM support, 512 MB minimum","microk8s":"runs on ARM, about 540 MB minimum","swarm":"anywhere Docker runs, including ARM","nomad":"single small binary, runs on ARM"},"mixed":{"kubernetes":"containers only","k3s":"containers only","microk8s":"containers only","swarm":"containers only","nomad":"runs containers, plain programs, Java and VMs"}}};
+
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const TOOLS = Object.keys(DATA.tools);
+const CRITS = Object.keys(DATA.criteria);
+
+function ratio(metric, value) {
+  const vals = TOOLS.map((t) => DATA.measured[t][metric]).filter((v) => v !== null && v !== undefined);
+  if (value === null || value === undefined || !vals.length) return null;
+  if (DATA.higher_is_better[metric]) { const best = Math.max(...vals); return best <= 0 ? 100 : 100 * value / best; }
+  const k = (DATA.soften || {})[metric] || 0, best = Math.min(...vals);
+  if (value + k <= 0) return 100;
+  return 100 * (best + k) / (value + k);
+}
+function critScore(c, tool) {
+  const def = DATA.criteria[c];
+  if (def.source === "rated") return DATA.rated[c][tool];
+  let tot = 0, ws = 0;
+  for (const [m, w] of Object.entries(def.parts)) {
+    const s = ratio(m, DATA.measured[tool][m]);
+    if (s !== null) { tot += w * s; ws += w; }
+  }
+  return ws ? tot / ws : null;
+}
+function weightsFrom(ans) {
+  const w = Object.fromEntries(CRITS.map((c) => [c, 0]));
+  for (const q of DATA.questions) {
+    const picked = [].concat(ans[q.id] || []);
+    for (const o of q.options) if (picked.includes(o.id)) for (const [c, v] of Object.entries(o.w)) w[c] += v;
+  }
+  return w;
+}
+function advise(ans) {
+  const w = weightsFrom(ans);
+  const wall = Object.values(w).reduce((a, b) => a + b, 0) || 1;
+  const ranking = TOOLS.map((tool) => {
+    let tot = 0, ws = 0; const parts = {}, missing = [];
+    for (const c of CRITS) {
+      let s = critScore(c, tool);
+      parts[c] = s === null ? null : Math.round(s * 10) / 10;
+      if (!w[c]) continue;
+      if (s === null) { missing.push(c); s = 50; }
+      tot += w[c] * s; ws += w[c];
+    }
+    let score = ws ? tot / ws : 0; const notes = [];
+    for (const r of DATA.rules) {
+      if (r.tool === tool && Object.entries(r.if).every(([k, v]) => ans[k] === v)) { score *= r.factor; notes.push(r.note); }
+    }
+    const strong = CRITS.filter((c) => w[c] > 0 && (parts[c] || 0) >= 85).sort((a, b) => w[b] * parts[b] - w[a] * parts[a]).slice(0, 3);
+    const weak = CRITS.filter((c) => w[c] > 0 && parts[c] !== null && parts[c] < 50).sort((a, b) => w[b] - w[a]).slice(0, 2);
+    return { tool, name: DATA.tools[tool].name, score: Math.round(score * 10) / 10, parts, strong, weak, missing, notes };
+  }).sort((a, b) => b.score - a.score);
+  const pct = Object.fromEntries(Object.entries(w).filter(([, v]) => v).map(([c, v]) => [c, Math.round(v / wall * 100)]));
+  return { weights: pct, ranking };
+}
+function fact(c, tool) {
+  const m = DATA.measured[tool];
+  const f = {
+    speed: () => m.heavy_rps ? `${Math.round(m.heavy_rps).toLocaleString("en-US")} requests/s under heavy load` : null,
+    latency: () => m.heavy_p95_ms ? `95% of requests answered within ${m.heavy_p95_ms} ms` : null,
+    recovery: () => m.recovery_s ? `replaced a crashed copy in ${m.recovery_s} s` : null,
+    memory: () => m.memory_mb ? `used ${Math.round(m.memory_mb)} MB when idle` : null,
+    setup: () => m.startup_s !== null && m.startup_s !== undefined ? `ready in ${m.startup_s} s` : null,
+  }[c];
+  return (f && f()) || ((DATA.rated_why[c] || {})[tool] || "");
+}
+
+
+// Nothing is pre-picked and the match stays hidden until the visitor presses Reveal,
+// so people answer for their real project instead of steering toward a result.
+let answers = {};
+let state = "answering"; // answering | revealed | stale
+const isAnswered = (q) => [].concat(answers[q.id] || []).length > 0;
+const answeredCount = () => DATA.questions.filter(isAnswered).length;
+const fmt = (v) => v >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v);
+const M = DATA.measured, N = (t) => DATA.tools[t].name;
+
+function buildForm() {
+  const f = $("#form");
+  f.innerHTML = DATA.questions.map((q, i) => `
+    <fieldset>
+      <legend><span class="qn" data-q="${q.id}">Q0${i + 1}</span>${esc(q.text.replace(" Pick any.", ""))}${q.type === "many" ? "<small>Pick any</small>" : ""}</legend>
+      <div class="opts">${q.options.map((o) => {
+        const type = q.type === "many" ? "checkbox" : "radio";
+        const on = [].concat(answers[q.id] || []).includes(o.id);
+        const id = `q-${q.id}-${o.id}`;
+        return `<label class="opt" for="${id}"><input type="${type}" id="${id}" name="${q.id}" value="${o.id}" ${on ? "checked" : ""}><span>${esc(o.label)}</span></label>`;
+      }).join("")}</div>
+    </fieldset>`).join("") + `
+    <div class="form-foot"><span class="hint" id="hint"></span><button class="reveal" type="submit" id="reveal">Reveal my match →</button></div>`;
+  f.addEventListener("change", () => {
+    for (const q of DATA.questions) {
+      const vals = [...f.querySelectorAll(`input[name="${q.id}"]:checked`)].map((x) => x.value);
+      answers[q.id] = q.type === "many" ? vals : vals[0];
+    }
+    if (state === "revealed") {
+      state = "stale";
+      const card = $("#result");
+      card.classList.add("stale");
+      card.insertAdjacentHTML("afterbegin", `<div class="stalebar">You changed an answer. Press <b>Update my match</b> to see the new result.</div>`);
+    }
+    if (state === "answering") renderLocked();
+    updateFoot();
+  });
+  f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (answeredCount() < DATA.questions.length) return;
+    state = "revealed";
+    render();
+    updateFoot();
+    const card = $("#result");
+    card.classList.remove("revealed"); void card.offsetWidth; card.classList.add("revealed");
+    if (window.innerWidth <= 1000) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function updateFoot() {
+  const n = answeredCount(), total = DATA.questions.length, btn = $("#reveal"), hint = $("#hint");
+  DATA.questions.forEach((q) => {
+    const el = document.querySelector(`.qn[data-q="${q.id}"]`), done = isAnswered(q);
+    el.classList.toggle("done", done);
+    el.textContent = `${done ? "✓ " : ""}${el.textContent.replace("✓ ", "")}`;
+  });
+  btn.disabled = n < total;
+  btn.classList.toggle("again", state !== "answering");
+  btn.classList.toggle("pulse", state === "stale" && n === total);
+  btn.textContent = state === "answering" ? "Reveal my match →" : "Update my match ↻";
+  hint.classList.toggle("ok", n === total && state === "answering");
+  if (n < total) {
+    const left = DATA.questions.map((q, i) => isAnswered(q) ? null : `Q0${i + 1}`).filter(Boolean);
+    hint.textContent = left.length === total ? "Answer all six questions to unlock" : `Answer ${left.length === 1 ? left[0] : left.slice(0, -1).join(", ") + " and " + left.at(-1)} to unlock`;
+  } else hint.textContent = state === "answering" ? "✓ All six answered" : "Changed an answer? Press again to update.";
+}
+
+function renderLocked() {
+  const n = answeredCount(), total = DATA.questions.length, pct = Math.round(100 * n / total), card = $("#result");
+  card.className = "card locked";
+  card.innerHTML = `
+    <div class="top"><span>Your match</span><span>Hidden</span></div>
+    <div class="qmark" aria-hidden="true">?</div>
+    <p class="lock-h">${n === total ? "Ready.<br>Press Reveal to see your match." : "Answer all six.<br>Then we reveal your orchestrator."}</p>
+    <p class="lock-p">We keep it hidden so you answer for your real project, not for the result you expect.</p>
+    <div class="prog"><div class="row"><span>${n} of ${total} answered</span><span>${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  renderMatrix(null);
+}
+
+function copyText(btn, text, codeEl) {
+  const label = btn.textContent;
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = label), 1400); };
+  const fallback = () => {
+    if (codeEl) { const r = document.createRange(); r.selectNodeContents(codeEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    btn.textContent = "Press Ctrl+C"; setTimeout(() => (btn.textContent = label), 2000);
+  };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+}
+
+function render() {
+  const res = advise(answers), best = res.ranking[0], t = DATA.tools[best.tool], C = DATA.criteria;
+  const why = [
+    ...best.strong.map((c) => `<li><span class="mk">+</span><span><b>${esc(C[c].label)}.</b> ${esc(fact(c, best.tool))}</span></li>`),
+    ...best.weak.map((c) => `<li><span class="mk">−</span><span><b>Weaker on ${esc(C[c].label.toLowerCase())}.</b> ${esc(fact(c, best.tool))}</span></li>`),
+    ...best.notes.map((n) => `<li><span class="mk">!</span><span>${esc(n)}</span></li>`),
+  ].join("");
+  $("#result").className = "card";
+  $("#result").innerHTML = `
+    <div class="top"><span>Your match is</span><span>Score ${best.score.toFixed(1)} / 100</span></div>
+    <div class="name">${esc(best.name)}</div>
+    <p>${esc(t.summary)}</p>
+    <ol class="rank">${res.ranking.map((r, i) => `<li class="${i === 0 ? "first" : ""}"><span>${esc(r.name)}</span><span class="track"><span class="fill" style="width:${Math.max(2, r.score)}%"></span></span><span class="v">${r.score.toFixed(1)}</span></li>`).join("")}</ol>
+    ${why ? `<ul class="why">${why}</ul>` : ""}
+    ${best.missing.length ? `<p class="note">Not measured yet: ${best.missing.map((c) => esc(C[c].label.toLowerCase())).join(", ")}. Counted as average.</p>` : ""}
+    <div class="cmdbox"><code id="cmd">${esc(t.install)}</code><button class="copy" type="button" id="copycmd">Copy</button></div>
+    <div class="docs">Docs: <a href="${esc(t.docs)}" target="_blank" rel="noopener">${esc(t.docs.replace(/^https:\/\//, ""))}</a> · tested as ${esc(t.tested_as)}</div>
+    <div class="weights" aria-label="What counts for you">${Object.entries(res.weights).sort((a, b) => b[1] - a[1]).map(([c, p]) => `<span>${esc(C[c].label)} ${p}%</span>`).join("")}</div>`;
+  $("#copycmd").addEventListener("click", (e) => copyText(e.currentTarget, t.install, $("#cmd")));
+  renderMatrix(res);
+}
+
+function renderMatrix(res) {
+  // Before the reveal, show the plain criterion scores with no personal weighting.
+  if (!res) res = { weights: {}, ranking: TOOLS.map((tool) => ({ tool, score: null })) };
+  const C = DATA.criteria, order = res.ranking.map((r) => r.tool);
+  const shown = res.ranking[0].score !== null;
+  const top = Object.fromEntries(CRITS.map((c) => [c, Math.max(...TOOLS.map((t) => critScore(c, t) ?? -1))]));
+  $("#matrix").innerHTML = `<thead><tr><th>Tool</th>${CRITS.map((c) => `<th class="${res.weights[c] ? "" : "off"}">${esc(C[c].label)}${res.weights[c] ? `<span class="w">${res.weights[c]}%</span>` : ""}</th>`).join("")}<th>Your score</th></tr></thead>
+  <tbody>${order.map((tool, i) => `<tr class="${i === 0 && shown ? "first" : ""}"><td>${esc(N(tool))}</td>${CRITS.map((c) => {
+    const s = critScore(c, tool), off = res.weights[c] || !shown ? "" : "off";
+    if (s === null) return `<td class="na ${off}">not yet</td>`;
+    return `<td class="${off} ${Math.abs(s - top[c]) < 0.05 ? "hi" : ""}">${Math.round(s)}</td>`;
+  }).join("")}<td>${res.ranking[i].score === null ? `<span class="na">after reveal</span>` : `<b>${res.ranking[i].score.toFixed(1)}</b>`}</td></tr>`).join("")}</tbody>`;
+}
+
+function bars(el, metric, higherBetter, unit) {
+  const rows = TOOLS.filter((t) => M[t][metric] != null).sort((a, b) => higherBetter ? M[b][metric] - M[a][metric] : M[a][metric] - M[b][metric]);
+  const max = Math.max(...rows.map((t) => M[t][metric]));
+  $(el).innerHTML = rows.map((t, i) => `<div class="${i === 0 ? "best" : ""}"><span>${esc(N(t))}</span><span class="t"><i style="width:${Math.max(1.5, 100 * M[t][metric] / max)}%"></i></span><span class="num">${fmt(M[t][metric])}${unit}</span></div>`).join("");
+}
+
+function renderBench() {
+  const cols = [["startup_s", "Start-up (s)"], ["deploy_s", "Deploy (s)"], ["memory_mb", "Idle memory (MB)"], ["normal_rps", "Normal load (req/s)"],
+    ["heavy_rps", "Heavy load (req/s)"], ["heavy_p95_ms", "Heavy p95 (ms)"], ["recovery_s", "Recovery (s)"], ["crash_failed_pct", "Lost in crash (%)"]];
+  $("#bench").innerHTML = `<thead><tr><th>Tool</th>${cols.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
+  <tbody>${TOOLS.map((t) => `<tr><td>${esc(N(t))}</td>${cols.map(([k]) => M[t][k] == null ? `<td class="na">not yet</td>` : `<td>${fmt(M[t][k])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("#benchnote").textContent = `Data version ${DATA.version}. Measured on one PC (16 cores, 15 GB RAM, Docker Desktop on WSL2), 3 copies of the same web app, every test run 3 times. Memory is each tool's own containers and processes when idle; for Docker Swarm it covers the app copies only, because the Swarm manager runs inside the Docker engine. MicroK8s ran as 1 node, Kubernetes and K3s as 3.`;
+  bars("#bars1", "heavy_rps", true, "");
+  bars("#bars2", "recovery_s", false, " s");
+}
+
+function renderStats() {
+  const by = (m, hi) => TOOLS.filter((t) => M[t][m] != null).sort((a, b) => hi ? M[b][m] - M[a][m] : M[a][m] - M[b][m])[0];
+  const fast = by("heavy_rps", true), rec = by("recovery_s", false), light = by("memory_mb", false);
+  const zero = TOOLS.filter((t) => M[t].crash_failed_pct === 0).length;
+  const s = [
+    [`${TOOLS.length}`, "orchestrators, same app, same tests"],
+    [fmt(M[fast].heavy_rps), `requests per second, fastest (${N(fast)})`],
+    [`${M[rec].recovery_s}<small> s</small>`, `quickest crash recovery (${N(rec)})`],
+    [`${zero}<small> / ${TOOLS.length}</small>`, "tools lost no requests during crashes"],
+  ];
+  $("#stats").innerHTML = s.map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${esc(l)}</div></div>`).join("");
+}
+
+$("#ver").textContent = DATA.version.split(" ")[0];
+const names = TOOLS.map((t) => N(t).toUpperCase()).join("  ✱  ") + "  ✱  ";
+$("#marq").textContent = names + names + names + names;
+$("#bib").textContent = `@software{khadka2026kubechaos,
+  author = {Khadka, Dhiraj},
+  title  = {KubeChaos: Testing, Comparing and Recommending
+            Container Orchestrators under Failure and Load},
+  year   = {2026},
+  institution = {Texas A\\&M University-San Antonio}
+}`;
+$("#copybib").addEventListener("click", (e) => copyText(e.currentTarget, $("#bib").textContent, $("#bib")));
+document.querySelectorAll(".tw .copy").forEach((b) => b.addEventListener("click", () => copyText(b, b.dataset.copy, b.closest(".tw").querySelector("pre"))));
+buildForm(); renderStats(); renderBench(); renderLocked(); updateFoot();
+</script>
+
+</body>
+</html>
