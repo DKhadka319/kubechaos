@@ -16,12 +16,12 @@ Three parts:
 
 ## Just want advice? (no install)
 
-Open the website (https://dkhadka319.github.io/kubechaos/) and answer the questions.
+Open the website (https://dkhadka319.github.io/Kubechaos/) and answer the questions.
 
 Or get the code:
 
 ```bash
-git clone https://github.com/DKhadka319/kubechaos
+git clone https://github.com/DKhadka319/Kubechaos
 cd kubechaos
 ```
 
