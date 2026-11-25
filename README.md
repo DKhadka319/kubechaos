@@ -2,7 +2,7 @@
 
 **Test, compare and choose a container orchestrator.**
 
-**Try the advisor online:** https://dkhadka319.github.io/kubechaos/
+**Try the advisor online:** https://dkhadka319.github.io/Kubechaos/
 KubeChaos runs the same web app on Kubernetes, K3s, MicroK8s, Docker Swarm and Nomad,
 measures them under normal load, heavy load and crashes, and then recommends which one fits your need.
 
